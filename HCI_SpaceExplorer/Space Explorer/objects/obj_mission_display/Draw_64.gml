@@ -1,7 +1,7 @@
 /// @description Draw Missions and Badges on Profile Page
 
 // Set initial drawing position and styles
-var start_x = 225;
+var start_x = 200;
 var start_y = 150;
 var row_h = 60;
 var badge_size = 96;
@@ -47,13 +47,13 @@ for (var i = 0; i < array_length(mission_names); i++) {
     }
     
     // --- Draw Mission Text ---
-    draw_set_font(SIRRDBColumnFont);
+    draw_set_font(SIRRDBHeaderFont);
     var text_color = mission_completed ? c_white : c_gray;
-    var text_x_pos = start_x + 70;
+    var text_x_pos = start_x;
     // If locked, draw a clear locked hint. If unlocked, draw normally.
     if (!mission_unlocked) {
         draw_set_color(c_gray);
-        draw_text(text_x_pos, current_y + 10, mission_desc + " (Locked)");
+        draw_text(text_x_pos, current_y + 10, mission_desc + " (Locked)"); // was + 50
     } else {
         draw_set_color(text_color);
         // Draw the mission description
@@ -76,4 +76,4 @@ for (var i = 0; i < array_length(mission_names); i++) {
 // Reset drawing settings
 draw_set_halign(fa_left);
 draw_set_valign(fa_top);
-draw_set_font(-1);
+draw_set_font(1);
