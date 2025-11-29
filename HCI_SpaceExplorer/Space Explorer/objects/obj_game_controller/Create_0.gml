@@ -1,6 +1,9 @@
 //Game controller keeps all global variables and game state for progress tracking
 persistent = true;
 
+// If true, clear progress on every new run by deleting the saved INI file.
+global.reset_on_start = true;
+
 global.game = {
     score: 0,
     location: "Earth",
@@ -100,10 +103,7 @@ global.missions = {
     visited_gas_giants: false,
 	visited_ice_giants: false,
 	visited_inner_planets: false,
-	visited_many_moons: false,
-	visited_first_steps: false,
 	visited_sun: false,
-	visited_rocky_worlds: false,
     visited_all_planets: false,
 };
 
@@ -112,12 +112,8 @@ global.mission_order = [
     "visited_mars",
     "visited_gas_giants",
     "visited_ice_giants",
-
     "visited_inner_planets",
-    "visited_many_moons",
-    "visited_first_steps",
     "visited_sun",
-    "visited_rocky_worlds",
     // Make the 'visit all planets' mission the last one so completing it doesn't
     // immediately cause earlier missions to be awarded in the same tick.
     "visited_all_planets"
@@ -184,18 +180,27 @@ global.mission_set_completed = function(mission_id) {
     }
 };
 
-// Load any saved mission progress now that global.missions exists
-global.load_missions();
+// Load or reset mission progress now that `global.missions` exists
+if (variable_global_exists("reset_on_start") && global.reset_on_start) {
+    // Clear in-memory mission flags
+    var _keys = variable_struct_get_names(global.missions);
+    for (var _i = 0; _i < array_length(_keys); _i++) {
+        variable_struct_set(global.missions, _keys[_i], false);
+    }
+    // Remove the saved file so progress is wiped between runs
+    if (file_exists("missions.ini")) {
+        file_delete("missions.ini");
+    }
+} else {
+    global.load_missions();
+}
 
 global.mission_info = {
 	visited_mars: "Red Planet Rover: Visit Mars.",
 	visited_gas_giants: "Gas Giant Explorer: Visit Jupiter and Saturn.",
 	visited_ice_giants: "Ice Giant Explorer: Visit Uranus and Neptune.",
 	visited_inner_planets: "Inner Circle Tour: Visit Mercury, Venus, and Mars.",
-	visited_many_moons: "Moon Enthusiast: Visit a planet with over 50 moons.",
-	visited_first_steps: "First Steps: Visit the two planets closest to the Sun.",
 	visited_sun: "Solar Flare: Bravely visit the Sun.",
-	visited_rocky_worlds: "Rocky Road: Visit the two rocky desert planets.",
     visited_all_planets: "Solar System Voyager: Visit every planet.",
 };
 
@@ -205,17 +210,48 @@ global.mission_info = {
 // Make sure to import your badge images as sprites first.
 global.badge_sprites = {
     // Safely get the sprite asset by name. If it doesn't exist, assign 'noone'.
-    visited_mars: asset_get_index("spr_badge_mars") != -1 ? asset_get_index("spr_badge_mars") : noone, 
+    visited_mars: asset_get_index("spr_badge_red_planet") != -1 ? asset_get_index("spr_badge_red_planet") : noone, 
     visited_gas_giants: asset_get_index("spr_badge_gas_giants") != -1 ? asset_get_index("spr_badge_gas_giants") : noone,
 	visited_ice_giants: asset_get_index("spr_badge_ice_giants") != -1 ? asset_get_index("spr_badge_ice_giants") : noone,
 	visited_inner_planets: asset_get_index("spr_badge_inner_circle") != -1 ? asset_get_index("spr_badge_inner_circle") : noone,
-	visited_many_moons: asset_get_index("spr_badge_moons") != -1 ? asset_get_index("spr_badge_moons") : noone,
-	visited_first_steps: asset_get_index("spr_badge_first_steps") != -1 ? asset_get_index("spr_badge_first_steps") : noone,
-	visited_sun: asset_get_index("spr_badge_sun") != -1 ? asset_get_index("spr_badge_sun") : noone,
-	visited_rocky_worlds: asset_get_index("spr_badge_rocky") != -1 ? asset_get_index("spr_badge_rocky") : noone,
+	visited_sun: asset_get_index("spr_my_cool_sun_badge") != -1 ? asset_get_index("spr_my_cool_sun_badge") : noone,
     visited_all_planets: asset_get_index("spr_badge_voyager") != -1 ? asset_get_index("spr_badge_voyager") : noone,
-
 };
+
+// Auto-map any `spr_badge_*` sprites to existing mission keys when possible.
+// This lets you add new badge sprites (named `spr_badge_<key>`) and have them
+// wired to `visited_<key>` missions automatically. A small overrides map
+// handles cases where sprite names and mission keys differ.
+var __candidates = ["spr_badge_mars","spr_badge_gas_giants","spr_badge_ice_giants","spr_badge_inner_circle","spr_badge_sun","spr_badge_voyager","spr_badge_moons"];
+var __overrides = {voyager: "visited_all_planets", inner_circle: "visited_inner_planets", moons: "visited_many_moons"};
+for (var __i = 0; __i < array_length(__candidates); __i++) {
+    var __s = __candidates[__i];
+    var __aid = asset_get_index(__s);
+    if (__aid != -1) {
+        var __base = string_copy(__s, 11, string_length(__s) - 10); // strip 'spr_badge_'
+        var __candidate_key = "visited_" + __base;
+        if (variable_struct_exists(global.missions, __candidate_key)) {
+            variable_struct_set(global.badge_sprites, __candidate_key, __aid);
+        } else if (variable_struct_exists(__overrides, __base)) {
+            var __mapped = variable_struct_get(__overrides, __base);
+            if (variable_struct_exists(global.missions, __mapped)) {
+                variable_struct_set(global.badge_sprites, __mapped, __aid);
+            }
+        }
+    }
+}
+
+// Debug: print the badge mappings so you can verify at startup
+show_debug_message("[BADGE MAP] Current badge mappings:");
+var __bm = variable_struct_get_names(global.badge_sprites);
+for (var __bi = 0; __bi < array_length(__bm); __bi++) {
+    var __k = __bm[__bi];
+    var __v = variable_struct_get(global.badge_sprites, __k);
+    show_debug_message("[BADGE MAP] " + __k + " -> id=" + string(__v) + ", exists=" + string((__v != noone) && sprite_exists(__v)));
+}
+
+
+
 
 
 global.planet_descriptions = {
