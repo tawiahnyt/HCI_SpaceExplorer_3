@@ -4,7 +4,7 @@
 var start_x = 225;
 var start_y = 150;
 var row_h = 60;
-var badge_size = 48;
+var badge_size = 96;
 
 
 draw_set_font(SIRRDBHeaderFont);
