@@ -3,7 +3,7 @@
 // Set initial drawing position and styles
 var start_x = 200;
 var start_y = 150;
-var row_h = 60;
+var row_h = 80;
 var badge_size = 96;
 
 
@@ -15,7 +15,7 @@ draw_set_valign(fa_top);
 draw_text(start_x, start_y - 50, "Space Missions");
 
 // Set up for the badge collection
-var badge_area_x = 800; // Increased this to move the whole section right
+var badge_area_x = 1000; // Increased this to move the whole section right
 var badge_area_y = 150;
 
 draw_set_font(SIRRDBHeaderFont);
